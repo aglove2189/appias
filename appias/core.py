@@ -31,11 +31,20 @@ class appias:
         self.models = models
         self.logging = logging
 
-        self.y = self.df[self.response]
-        self.X = self.df.drop(self.response, axis=1)
-
         if self.logging:
             self._setup_logging()
+
+    @property
+    def feature_names(self):
+        return [col for col in self.df if col != self.response]
+
+    @property
+    def y(self):
+        return self.df[self.response]
+
+    @property
+    def X(self):
+        return self.df[self.feature_names]
 
     @staticmethod
     def _ensure_appias_df(df):
@@ -62,29 +71,30 @@ class appias:
 
     def plot_hist_features(self, **kwargs):
         """ Plots histogram of features. """
-        for col in self.X:
-            self.X[col].plot_hist(**kwargs)
+        for col in self.feature_names:
+            self.df[col].plot_hist(**kwargs)
 
     def pairplot(self, **kwargs):
         """ Plots pairplot of features via seaborn. """
-        sns.pairplot(self.X, **kwargs)
+        sns.pairplot(self.df[self.feature_names], **kwargs)
 
-    def impute_features(self, na_strategy=np.median, inf_strategy=max):
+    def impute_features(self, na_strategy=np.mean, inf_strategy=max):
         """ Imputes infinite and nan values for all features.
         Params:
-            na_strategy: callable (optional): Defaults to np.median
+            na_strategy: callable (optional): Defaults to np.mean
             inf_strategy: callable (optional): Defaults to max
         Returns:
             DataFrame
         """
-        for col in self.X:
-            self.X[col] = self.X[col].impute(na_strategy=na_strategy, inf_strategy=inf_strategy)
+        for col in self.feature_names:
+            self.df[col] = self.df[col].impute(na_strategy=na_strategy, inf_strategy=inf_strategy)
 
     def describe_features(self):
         """ Describe features with enhanced pd.DataFrame.describe
         Returns:
             pd.DataFrame: Summary statistics
         """
+
         ldesc = [s.describe() for _, s in self.X.iteritems()]
         # set a convenient order for rows
         names = []
@@ -95,14 +105,14 @@ class appias:
                     names.append(name)
 
         d = pd.concat([x.reindex(names, copy=False) for x in ldesc], axis=1, sort=False)
-        d.columns = self.X.columns.copy()
+        d.columns = self.feature_names.copy()
 
         return d
 
     def remove_outliers_features(self, **kwargs):
         """ Removes outliers via median absolute deviation for all features. """
-        for col in self.X:
-            self.X[col] = self.X[col].remove_outliers(**kwargs)
+        for col in self.feature_names:
+            self.df[col] = self.df[col].remove_outliers(**kwargs)
 
     def verify(self):
         """ A few data quality checks to ensure data is okish enough for ml.
@@ -111,7 +121,7 @@ class appias:
             warn("Index is not unique, resetting.", UserWarning)
             self.df = self.df.reset_index(drop=True)
 
-        constants = self.X.apply(lambda x: x.type() == 'constant')
+        constants = self.X.apply(lambda x: x.type) == 'constant'
         if constants.any():
             cols = self.X.columns[constants]
             warn("Dropped columns with constants: {}".format(cols.values), UserWarning)
@@ -125,11 +135,13 @@ class appias:
         if object_columns.any():
             raise ValueError("Object columns: {}".format(object_columns.values))
 
-    def fit(self, transform=False):
+    def fit(self, models=None, transform=False):
         """ Fits models.
         Returns:
             dict
         """
+        self.models = models
+
         for _, model in self.models.items():
             if transform:
                 model = self._make_pipeline(model)

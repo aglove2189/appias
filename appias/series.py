@@ -115,7 +115,7 @@ class AppiasSeries(pd.Series):
             'median': self.median(),
             'nunique': self.nunique(),
             'na': sum(self.isna()),
-            'type': self.type()
+            'type': self.type
         }
 
         if pd.core.dtypes.common.is_numeric_dtype(self):
@@ -135,6 +135,7 @@ class AppiasSeries(pd.Series):
 
         return self.loc[modified_z_score < threshhold]
 
+    @property
     def type(self):
         """ Additional types on top of pandas dtypes
         """
@@ -143,4 +144,4 @@ class AppiasSeries(pd.Series):
         elif self.nunique() == 2:
             return 'binary'
         else:
-            self.dtype
+            return self.dtype
