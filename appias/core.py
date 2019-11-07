@@ -46,9 +46,9 @@ class appias:
         else:
             raise TypeError('Expecting a DataFrame for df.')
 
-    def reduce_memory_usage(self):
+    def reduce_memory_usage(self, verbose=0):
         """ Reduces memory used by DataFrame. """
-        return reduce_memory_usage(self.df)
+        self.df = reduce_memory_usage(self.df, verbose=verbose)
 
     @staticmethod
     def _setup_logging():
