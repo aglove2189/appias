@@ -110,12 +110,13 @@ class AppiasSeries(pd.Series):
         Returns:
             Seires: Summary statistics
         """
-        stats = {'len': len(self), # number of observations in the Series (including na and inf)
-                 'median': self.median(),
-                 'distinct': self.nunique(dropna=False),
-                 'constant': self.nunique(dropna=False) == 1,
-                 'na': sum(self.isna())
-                }
+        stats = {
+            'len': len(self),  # number of observations in the Series (including na and inf)
+            'median': self.median(),
+            'nunique': self.nunique(),
+            'na': sum(self.isna()),
+            'type': self.type()
+        }
 
         if pd.core.dtypes.common.is_numeric_dtype(self):
             stats['infinite'] = sum(np.isinf(self))
@@ -133,3 +134,13 @@ class AppiasSeries(pd.Series):
         modified_z_score = 0.6745 * diff / diff.median()
 
         return self.loc[modified_z_score < threshhold]
+
+    def type(self):
+        """ Additional types on top of pandas dtypes
+        """
+        if self.nunique() == 1:
+            return 'constant'
+        elif self.nunique() == 2:
+            return 'binary'
+        else:
+            self.dtype

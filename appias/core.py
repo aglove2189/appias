@@ -1,6 +1,6 @@
 """ Appias Core """
 import os
-import warnings
+from warnings import warn
 
 import pandas as pd
 import numpy as np
@@ -103,6 +103,27 @@ class appias:
         """ Removes outliers via median absolute deviation for all features. """
         for col in self.X:
             self.X[col] = self.X[col].remove_outliers(**kwargs)
+
+    def verify(self):
+        """ A few data quality checks to ensure data is okish enough for ml.
+        """
+        if not self.df.index.is_unique:
+            warn("Index is not unique, resetting.", UserWarning)
+            self.df = self.df.reset_index(drop=True)
+
+        constants = self.X.apply(lambda x: x.type() == 'constant')
+        if constants.any():
+            cols = self.X.columns[constants]
+            warn("Dropped columns with constants: {}".format(cols.values), UserWarning)
+            self.df = self.df.drop(columns=cols, axis=1)
+
+        duplicated = self.X.columns.duplicated()
+        if duplicated.any():
+            raise ValueError("Duplicate columns: {}".format(self.X.columns[duplicated]))
+
+        object_columns = self.X.select_dtypes(include='O').columns
+        if object_columns.any():
+            raise ValueError("Object columns: {}".format(object_columns.values))
 
     def fit(self, transform=False):
         """ Fits models.
