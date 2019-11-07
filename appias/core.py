@@ -14,8 +14,6 @@ from sklearn.model_selection import cross_validate
 from .frame import AppiasDataFrame
 from .util import reduce_memory_usage
 
-warnings.simplefilter(action='ignore', category=FutureWarning)
-
 
 class appias:
     """ Some glue for a few of the standard steps when exploring a dataset and building a model.
@@ -71,10 +69,10 @@ class appias:
         """ Plots pairplot of features via seaborn. """
         sns.pairplot(self.X, **kwargs)
 
-    def impute_features(self, na_strategy=np.mean, inf_strategy=max):
+    def impute_features(self, na_strategy=np.median, inf_strategy=max):
         """ Imputes infinite and nan values for all features.
         Params:
-            na_strategy: callable (optional): Defaults to np.mean
+            na_strategy: callable (optional): Defaults to np.median
             inf_strategy: callable (optional): Defaults to max
         Returns:
             DataFrame
@@ -96,7 +94,7 @@ class appias:
                 if name not in names:
                     names.append(name)
 
-        d = pd.concat(ldesc, join_axes=pd.Index([names]), axis=1)
+        d = pd.concat([x.reindex(names, copy=False) for x in ldesc], axis=1, sort=False)
         d.columns = self.X.columns.copy()
 
         return d
@@ -134,7 +132,7 @@ class appias:
         return self.fit(**kwargs), self.predict()
 
     def score(self, sample_weight=None):
-        """ Returns R^2 of the prediction for each model.
+        """ Returns score of the prediction for each model.
         Params:
             sample_weight: array-like (optional)
         Returns:
@@ -153,7 +151,7 @@ class appias:
                        scoring=('r2', 'neg_mean_squared_error'),
                        return_train_score=True,
                        n_jobs=-1,
-                       transform=False,
+                       transform_response=False,
                        **kwargs):
         """ Evaluate metric(s) by cross-validation and also record fit/score times.
         Params:
@@ -161,24 +159,25 @@ class appias:
             scoring: array-like (optional)
             return_train_score: boolean (optional)
             n_jobs: int (optional)
-            transform: boolean (optional): Whether to transform the response during cv.
+            transform_response: boolean (optional): Whether to transform the response during cv.
         Returns:
             tuple of dicts
         """
         cvs = {}
         for name, model in tqdm(self.models.items()):
-            if transform:
+            if transform_response:
                 model = self._make_pipeline(model)
 
-            cvs[name] = cross_validate(model,
-                                       X=self.X,
-                                       y=self.y,
-                                       cv=cv,
-                                       scoring=scoring,
-                                       return_train_score=return_train_score,
-                                       n_jobs=n_jobs,
-                                       **kwargs
-                                      )
+            cvs[name] = cross_validate(
+                model,
+                X=self.X,
+                y=self.y,
+                cv=cv,
+                scoring=scoring,
+                return_train_score=return_train_score,
+                n_jobs=n_jobs,
+                **kwargs
+            )
 
         self._log(cvs)
         return cvs

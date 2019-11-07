@@ -129,7 +129,7 @@ class AppiasSeries(pd.Series):
         Returns:
             Series
         """
-        diff = np.sqrt((self - self.median())**2)
+        diff = np.sqrt((self - self.median()) ** 2)
         modified_z_score = 0.6745 * diff / diff.median()
 
         return self.loc[modified_z_score < threshhold]

@@ -1,3 +1,3 @@
-from .core import appias
-from .frame import AppiasDataFrame
-from .series import AppiasSeries
+from .core import appias  # noqa
+from .frame import AppiasDataFrame  # noqa
+from .series import AppiasSeries  # noqa
