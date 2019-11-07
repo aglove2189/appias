@@ -28,9 +28,7 @@ class appias:
         logging: boolean (optional): Whether to log actions to 'appias_logs' folder
     """
     def __init__(self, df, response=None, models=None, logging=False):
-        self._validate(df)
-
-        self.df = df
+        self.df = self._ensure_appias_df(df)
         self.response = response
         self.models = models
         self.logging = logging
@@ -42,9 +40,13 @@ class appias:
             self._setup_logging()
 
     @staticmethod
-    def _validate(df):
-        if not isinstance(df, AppiasDataFrame):
-            raise TypeError('Expecting an Appias DataFrame for df.')
+    def _ensure_appias_df(df):
+        if isinstance(df, AppiasDataFrame):
+            return df
+        elif isinstance(df, pd.DataFrame):
+            return AppiasDataFrame(df)
+        else:
+            raise TypeError('Expecting a DataFrame for df.')
 
     def reduce_memory_usage(self):
         """ Reduces memory used by DataFrame. """
